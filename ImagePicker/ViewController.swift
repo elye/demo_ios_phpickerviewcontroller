@@ -6,42 +6,46 @@ class ViewController: UIViewController {
     @IBOutlet weak var imagePicker: UIImageView!
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
-        
         imagePicker.isUserInteractionEnabled = true
         let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(changeImage))
         imagePicker.addGestureRecognizer(gestureRecognizer)
     }
     
     @objc func changeImage() {
-        var configuration = PHPickerConfiguration()
-        configuration.filter = .images
-        configuration.selectionLimit = 1
-        
-        let controller = PHPickerViewController(configuration: configuration)
+        let controller = UIImagePickerController()
         controller.delegate = self
+        controller.allowsEditing = true
+        controller.mediaTypes = ["public.image"]
         present(controller, animated: true)
+    }
+    
+    func didSelect(image: UIImage?) {
+        self.imagePicker.image = image
+    }
+    
+}
+
+extension ViewController: UIImagePickerControllerDelegate {
+    public func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        self.pickerController(picker, didSelect: nil)
+    }
+
+    public func imagePickerController(_ picker: UIImagePickerController,
+                                      didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+        guard let image = info[.editedImage] as? UIImage else {
+            return self.pickerController(picker, didSelect: nil)
+        }
+        self.pickerController(picker, didSelect: image)
+    }
+    
+    private func pickerController(_ controller: UIImagePickerController, didSelect image: UIImage?) {
+        controller.dismiss(animated: true, completion: nil)
+
+        self.didSelect(image: image)
     }
 }
 
-extension ViewController: PHPickerViewControllerDelegate {
-    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-        if !results.isEmpty {
-            dismiss(animated: true, completion: nil)
-            let result = results.first!
-            let itemProvider = result.itemProvider
-            if itemProvider.canLoadObject(ofClass: UIImage.self) {
-                itemProvider.loadObject(ofClass: UIImage.self) {
-                    [weak self] image, error in
-                    guard let image = image as? UIImage else {
-                        return
-                    }
-                    DispatchQueue.main.async {
-                        self?.imagePicker.image = image
-                    }
-                }
-            }
-        }
-    }
+extension ViewController: UINavigationControllerDelegate {
+
 }
 
